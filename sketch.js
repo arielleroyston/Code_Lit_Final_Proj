@@ -14,6 +14,9 @@ var uMotionGraph, vMotionGraph;
 var osc;
 var playing = false;
 
+var circles = [];
+
+
 function setup() {
     // canvas and flow set-up
     createCanvas(w, h);
@@ -28,6 +31,13 @@ function setup() {
     osc.setType('sine');
     osc.amp(0);
     osc.start();
+}
+
+
+function playNote(x, y){
+
+    addCircle(x, y);
+    playSound(y);
 }
 
 function playSound(y){
@@ -46,7 +56,7 @@ function playSound(y){
 function convertYToNote(y){
 
     var note = "a";
-    var rowHeight = 480 / 12
+    var rowHeight = h / 12
     var rowNumber = round(y/rowHeight)
     switch(rowNumber){
         case 0: note = "c sharp"
@@ -110,11 +120,10 @@ function convertNoteToFrequency(note){
     return frequency;
 
 }
-
-function draw() {
-
+function soundStuff(){
     var found = false; // found means a long line is found
     var y = 0;
+    var x = 0;
     capture.loadPixels();
     if (capture.pixels.length > 0) {
         if (previousPixels) {
@@ -137,12 +146,13 @@ function draw() {
             flow.flow.zones.forEach(function (zone) {
                 stroke(map(zone.u, -step, +step, 0, 255),
                        map(zone.v, -step, +step, 0, 255), 128);
-                line(zone.x, zone.y, zone.x + zone.u, zone.y + zone.v);
+                //line(zone.x, zone.y, zone.x + zone.u, zone.y + zone.v);
                 var length = sqrt(zone.u*zone.u + zone.v*zone.v);
                 //print(length)
                 if (!found){
                     if (length > 16.0) {
-                        y = 480 - zone.y
+                        y = h - zone.y
+                        x = zone.x
                         found = true
                     }
                 }
@@ -155,12 +165,46 @@ function draw() {
 
     }
     if(found){
-        playSound(y)        
+        playNote(x,y);        
 
     }else{
         osc.amp(0, 12);
         playing = false;
     }
+}
+
+function addCircle(x, y){
+
+    fill(255, 0, 0);
+    var r = Math.floor(Math.random() * 255);
+    var g = Math.floor(Math.random() * 255);
+    var b = Math.floor(Math.random() * 255);
+    var color = {'r':r, 'g':g, 'b':b, 'a':200}
+    circles.push({'x':x,'y':y,'radius':64,'color':color})
+}
+
+
+function draw() {
+    soundStuff();
+    noStroke();
+    var newCircles = [];
+    var numCircles = circles.length
+    for(var i = 0; i<numCircles; i++) {
+        
+        var color = circles[i].color;
+        fill(color.r, color.g, color.b, color.a);
+
+        ellipse(circles[i].x, h-circles[i].y, circles[i].radius, circles[i].radius);
+        
+        circles[i].color.a = circles[i].color.a - 8;
+        circles[i].radius = circles[i].radius + 4;
+        if(circles[i].color.a > 0){
+            newCircles.push(circles[i])
+        }
+    }
+
+    circles = newCircles;
+    
 }
 
 
